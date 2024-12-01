@@ -1,3 +1,4 @@
-Flask
-requests 
-instagarapi requirements.txt
+pip install flask 
+pip install instagrapi 
+pip install pillow 
+pip install requests requirements.txt

@@ -1,4 +1,5 @@
 flask
 requests
 instagrapi
-gunicorn runtime.txt
+gunicorn
+python-dotenv

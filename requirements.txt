@@ -1,4 +1,4 @@
-flask
+flasks
 requests
 instagrapi
 gunicorn

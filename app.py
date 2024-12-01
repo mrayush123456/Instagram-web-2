@@ -1,161 +1,100 @@
-from flask import Flask, request, render_template_string, redirect, url_for
-from instagrapi import Client
+from flask import Flask, request, render_template_string
+from instagram_private_api import Client
 import time
-import os
 
 app = Flask(__name__)
 
-# HTML Template for the Web Page
+# HTML Template
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Group Messenger</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            max-width: 400px;
-            width: 100%;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        label {
-            font-weight: bold;
-            margin-top: 10px;
-            display: block;
-            color: #555;
-        }
-        input, textarea, button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-        button {
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .message {
-            color: red;
-            text-align: center;
-            margin-top: -10px;
-            font-size: 14px;
-        }
-    </style>
+    <title>Instagram Message Bot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>Instagram Group Messenger</h1>
-        <form action="/" method="POST" enctype="multipart/form-data">
-            <label for="username">Instagram Username:</label>
-            <input type="text" id="username" name="username" required placeholder="Enter your username">
-
-            <label for="password">Instagram Password:</label>
-            <input type="password" id="password" name="password" required placeholder="Enter your password">
-
-            <label for="group_id">Target Group/Chat ID:</label>
-            <input type="text" id="group_id" name="group_id" required placeholder="Enter group/chat ID">
-
-            <label for="delay">Delay (in seconds):</label>
-            <input type="number" id="delay" name="delay" required placeholder="Enter delay between messages">
-
-            <label for="messages_file">Upload Messages File (TXT):</label>
-            <input type="file" id="messages_file" name="messages_file" accept=".txt" required>
-
-            <button type="submit">Send Messages</button>
+    <div class="container mt-5">
+        <h1 class="text-center">Instagram Messaging Bot</h1>
+        <form action="/" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="cookieFile" class="form-label">Upload Instagram Cookie (.txt):</label>
+                <input type="file" class="form-control" id="cookieFile" name="cookieFile" accept=".txt" required>
+            </div>
+            <div class="mb-3">
+                <label for="username" class="form-label">Target Username:</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            <div class="mb-3">
+                <label for="txtFile" class="form-label">Upload Messages File (.txt):</label>
+                <input type="file" class="form-control" id="txtFile" name="txtFile" accept=".txt" required>
+            </div>
+            <div class="mb-3">
+                <label for="delay" class="form-label">Delay Between Messages (seconds):</label>
+                <input type="number" class="form-control" id="delay" name="delay" min="1" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Submit</button>
         </form>
     </div>
 </body>
 </html>
 '''
 
-# Function to log in to Instagram
-def instagram_login(username, password):
-    cl = Client()
+def login_with_cookie(cookie_path):
+    """Login to Instagram using cookies."""
     try:
-        cl.login(username, password)
-        print("[SUCCESS] Logged in to Instagram!")
-        return cl
+        with open(cookie_path, 'r') as file:
+            cookies = file.read().strip()
+        # Parse cookies for API (convert JSON or text cookies if needed)
+        session = {'cookie': cookies}  # Example, depends on the API format
+        api = Client(username=None, password=None, settings=session)
+        return api
     except Exception as e:
-        print(f"[ERROR] Login failed: {e}")
+        print(f"[ERROR] Login failed with cookies: {e}")
         return None
 
-# Function to send messages to a group/chat
-def send_messages(cl, group_id, messages, delay):
+def send_messages(api, target_username, messages, delay):
+    """Send messages to the target username."""
     try:
+        user_id = api.username_info(target_username)['user']['pk']
         for message in messages:
-            cl.direct_send(message, thread_ids=[group_id])
-            print(f"[SUCCESS] Sent message: {message}")
+            api.direct_message(message, user_id)
+            print(f"[INFO] Sent message: {message}")
             time.sleep(delay)
-        return True
     except Exception as e:
-        print(f"[ERROR] Failed to send message: {e}")
-        return False
+        print(f"[ERROR] Failed to send messages: {e}")
 
-# Flask routes
 @app.route("/", methods=["GET", "POST"])
-def home():
+def index():
     if request.method == "POST":
-        # Get form data
+        # Get files and form data
+        cookie_file = request.files["cookieFile"]
+        txt_file = request.files["txtFile"]
         username = request.form.get("username")
-        password = request.form.get("password")
-        group_id = request.form.get("group_id")
         delay = int(request.form.get("delay"))
-        messages_file = request.files["messages_file"]
 
-        # Save uploaded file temporarily
-        file_path = os.path.join("temp_messages.txt")
-        messages_file.save(file_path)
+        # Save cookie file temporarily
+        cookie_path = "temp_cookie.txt"
+        cookie_file.save(cookie_path)
 
-        # Read messages from the file
+        # Read messages from file
         try:
-            with open(file_path, "r") as file:
-                messages = file.read().splitlines()
+            messages = txt_file.read().decode("utf-8").splitlines()
         except Exception as e:
-            return f"<p>Error reading the file: {e}</p>"
+            return f"<p>Error reading message file: {e}</p>"
 
-        # Log in to Instagram
-        cl = instagram_login(username, password)
-        if not cl:
-            return "<p>Failed to log in. Please check your credentials.</p>"
+        # Login with cookies
+        api = login_with_cookie(cookie_path)
+        if not api:
+            return "<p>Failed to log in with cookies. Check your file.</p>"
 
-        # Send messages to the group
-        success = send_messages(cl, group_id, messages, delay)
-        os.remove(file_path)  # Delete temp file after sending
+        # Send messages
+        send_messages(api, username, messages, delay)
+        return "<p>Messages sent successfully!</p>"
 
-        if success:
-            return "<p>Messages sent successfully!</p>"
-        else:
-            return "<p>Failed to send messages. Check the group ID or your messages.</p>"
-
-    # Render the form
     return render_template_string(HTML_TEMPLATE)
 
 if __name__ == "__main__":
     app.run(debug=True)
+    

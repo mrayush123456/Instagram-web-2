@@ -1,5 +1,0 @@
-flasks
-requests
-instagrapi
-gunicorn
-python-dotenv

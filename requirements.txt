@@ -1,4 +1,2 @@
-pip install flask 
-pip install instagrapi 
-pip install pillow 
-pip install requests requirements.txt
+Flask==2.3.2
+instagrapi==1.18.5 requests.txt

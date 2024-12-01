@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A Python project template with Flask and Instagrapi."
 authors = ["Your Name <you@example.com>"]
 
-[[tool.poetry.dependencies]
+[tool.poetry.dependencies]
 python = ">=3.10.0,<3.12"  # Python version range
 flask = "^3.0.3"  # Web framework
 requests = "^2.32.3"  # HTTP requests

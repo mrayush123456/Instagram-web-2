@@ -5,17 +5,17 @@ description = "A Python project template with Flask and Instagrapi."
 authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.10.0,<3.12"
-flask = "^3.0.3"
-requests = "^2.32.3"
-instagrapi = "^1.19.5"
-gunicorn = "^21.2.0"
-python-dotenv = "^1.0.0"
-pillow = "^9.5.0"  # Add Pillow package
+python = ">=3.10.0,<3.12"  # Python version range
+flask = "^3.0.3"  # Web framework
+requests = "^2.32.3"  # HTTP requests
+instagrapi = "^1.19.5"  # Instagram API library
+gunicorn = "^21.2.0"  # Production WSGI server
+python-dotenv = "^1.0.0"  # Environment variable management
+pillow = "^9.5.0"  # Image processing library
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.4.0"
-black = "^23.9.0"
+pytest = "^7.4.0"  # Testing framework
+black = "^23.9.0"  # Code formatter
 
 [tool.pyright]
 useLibraryCodeForTypes = true

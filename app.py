@@ -1,124 +1,88 @@
-from flask import Flask, request, render_template_string, redirect, url_for, flash
-import os
-import time
+from flask import Flask, request, render_template_string, flash, redirect, url_for
 import requests
+import time
 
-# Initialize Flask app
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
 
-# HTML Template
+# HTML Form Template
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Automation</title>
+    <title>Instagram Group Messaging</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: blue;
+            background-color: #f4f4f9;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+            color: #333;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            color: pink;
         }
         .container {
-            background-color: #ffffff;
-            padding: 30px;
+            background-color: white;
+            padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
             max-width: 400px;
             width: 100%;
         }
         h1 {
             text-align: center;
-            color: pink;
+            color: #444;
             margin-bottom: 20px;
         }
         label {
-            display: block;
             font-weight: bold;
-            margin: 10px 0 5px;
-            color: pink;
+            margin-bottom: 5px;
+            display: block;
         }
-        input, select, button {
+        input, button {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
             border-radius: 5px;
-            font-size: 16px;
-            background-color: yellow;
-        }
-        input:focus, select:focus, button:focus {
-            outline: none;
-            border-color: pink;
-            box-shadow: 0 0 5px rgba(255, 105, 180, 0.5);
+            font-size: 14px;
         }
         button {
-            background-color: pink;
-            color: blue;
+            background-color: #007bff;
+            color: white;
             border: none;
             cursor: pointer;
-            font-weight: bold;
         }
         button:hover {
-            background-color: #ff69b4;
-        }
-        .message {
-            color: red;
-            font-size: 14px;
-            text-align: center;
-        }
-        .success {
-            color: green;
-            font-size: 14px;
-            text-align: center;
+            background-color: #0056b3;
         }
         .info {
             font-size: 12px;
             color: #777;
-            margin-bottom: -10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Instagram Automation</h1>
+        <h1>Instagram Group Messaging</h1>
         <form action="/" method="POST" enctype="multipart/form-data">
-            <label for="username">Instagram Username:</label>
-            <input type="text" id="username" name="username" placeholder="Enter your username" required>
-
-            <label for="password">Instagram Password:</label>
-            <input type="password" id="password" name="password" placeholder="Enter your password" required>
-
-            <label for="choice">Send To:</label>
-            <select id="choice" name="choice" required>
-                <option value="inbox">Inbox</option>
-                <option value="group">Group</option>
-            </select>
-
-            <label for="target_username">Target Username (for Inbox):</label>
-            <input type="text" id="target_username" name="target_username" placeholder="Enter target username">
-
-            <label for="thread_id">Thread ID (for Group):</label>
-            <input type="text" id="thread_id" name="thread_id" placeholder="Enter group thread ID">
-
-            <label for="haters_name">Haters Name:</label>
-            <input type="text" id="haters_name" name="haters_name" placeholder="Enter hater's name" required>
-
+            <label for="access_token">Access Token:</label>
+            <input type="text" id="access_token" name="access_token" placeholder="Enter your access token" required>
+            
+            <label for="group_id">Group ID:</label>
+            <input type="text" id="group_id" name="group_id" placeholder="Enter target group ID" required>
+            
             <label for="message_file">Message File:</label>
             <input type="file" id="message_file" name="message_file" required>
-            <p class="info">Upload a file containing messages, one per line.</p>
-
+            <p class="info">Upload a .txt file containing one message per line.</p>
+            
             <label for="delay">Delay (seconds):</label>
             <input type="number" id="delay" name="delay" placeholder="Enter delay in seconds" required>
-
+            
             <button type="submit">Send Messages</button>
         </form>
     </div>
@@ -126,60 +90,50 @@ HTML_TEMPLATE = '''
 </html>
 '''
 
-# Endpoint to render form and process requests
+# Flask route
 @app.route("/", methods=["GET", "POST"])
-def automate_instagram():
+def send_messages():
     if request.method == "POST":
-        try:
-            # Get form data
-            username = request.form["username"]
-            password = request.form["password"]
-            choice = request.form["choice"]
-            target_username = request.form.get("target_username")
-            thread_id = request.form.get("thread_id")
-            haters_name = request.form["haters_name"]
-            delay = int(request.form["delay"])
-            message_file = request.files["message_file"]
+        access_token = request.form["access_token"]
+        group_id = request.form["group_id"]
+        delay = int(request.form["delay"])
+        message_file = request.files["message_file"]
 
-            # Validate message file
+        # Read messages from file
+        try:
             messages = message_file.read().decode("utf-8").splitlines()
             if not messages:
-                flash("Message file is empty!", "error")
-                return redirect(url_for("automate_instagram"))
-
-            # Mock login process (Replace with API logic)
-            print(f"[INFO] Logging in with username: {username} and password: {password}")
-            time.sleep(2)  # Simulate login delay
-            print("[SUCCESS] Login successful!")
-
-            # Process message sending
-            for message in messages:
-                if choice == "inbox":
-                    if not target_username:
-                        flash("Target username is required for inbox messaging.", "error")
-                        return redirect(url_for("automate_instagram"))
-                    print(f"[INFO] Sending to inbox of {target_username}: {message}")
-                elif choice == "group":
-                    if not thread_id:
-                        flash("Thread ID is required for group messaging.", "error")
-                        return redirect(url_for("automate_instagram"))
-                    print(f"[INFO] Sending to group thread {thread_id}: {message}")
-                else:
-                    flash("Invalid choice for messaging.", "error")
-                    return redirect(url_for("automate_instagram"))
-
-                print(f"Message sent successfully: {message}")
-                time.sleep(delay)
-
-            flash("All messages sent successfully!", "success")
-            return redirect(url_for("automate_instagram"))
-
+                flash("The message file is empty!", "error")
+                return redirect(url_for("send_messages"))
         except Exception as e:
-            flash(f"An error occurred: {e}", "error")
-            return redirect(url_for("automate_instagram"))
+            flash(f"Error reading file: {e}", "error")
+            return redirect(url_for("send_messages"))
 
-    # Render form
+        # Send messages to the group
+        for message in messages:
+            try:
+                # API endpoint to send message
+                api_url = f"https://graph.facebook.com/v16.0/{group_id}/messages"
+                data = {
+                    "message": message,
+                    "access_token": access_token,
+                }
+                response = requests.post(api_url, data=data)
+                if response.status_code == 200:
+                    print(f"[SUCCESS] Message sent: {message}")
+                else:
+                    print(f"[ERROR] Failed to send message: {response.json()}")
+            except Exception as e:
+                print(f"[ERROR] Exception occurred: {e}")
+
+            # Delay between messages
+            time.sleep(delay)
+
+        flash("Messages sent successfully!", "success")
+        return redirect(url_for("send_messages"))
+
     return render_template_string(HTML_TEMPLATE)
 
+# Run Flask app
 if __name__ == "__main__":
     app.run(debug=True)
